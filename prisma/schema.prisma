@@ -9,10 +9,17 @@ generator client {
 
 enum UserRole {
   SUPER_ADMIN
+  DIRECTOR
   ADMIN
+  ADVISOR
+  FINANCIAL_ANALYST
+  DOCUMENT_EXECUTIVE
+  RELATIONSHIP_MANAGER
+  CONTENT_MANAGER
+  SUPPORT
+  CLIENT
   LEAD_ADVISOR
   ANALYST
-  CLIENT
   PARTNER_CA
 }
 
@@ -116,10 +123,17 @@ model User {
   fullName      String
   role          UserRole  @default(CLIENT)
   phone         String?
-  isMfaEnabled  Boolean   @default(false)
-  mfaSecret     String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isMfaEnabled          Boolean   @default(false)
+  mfaSecret             String?
+  failedLoginAttempts   Int       @default(0)
+  lockedUntil           DateTime?
+  emailVerified         DateTime?
+  backupCodesJson       String?
+  status                String    @default("ACTIVE")
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   companyProfile CompanyProfile?
   assignedProjects Project[] @relation("AdvisorAssignedProjects")
@@ -130,9 +144,54 @@ model User {
   meetings Meeting[]
   auditLogs AuditLog[]
   assessments Assessment[]
+  sessions Session[]
+  passwordResetTokens PasswordResetToken[]
+  verificationTokens EmailVerificationToken[]
 
   @@index([email])
   @@index([role])
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String    @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  lastActiveAt DateTime  @default(now())
+  isRevoked    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model EmailVerificationToken {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
 }
 
 model CompanyProfile {

@@ -17,6 +17,7 @@ import {
   Bell,
   Search,
 } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -125,13 +126,15 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <p className="text-[10px] text-navy-500">Managing Director</p>
             </div>
           </div>
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-[11px] font-semibold text-navy-600 hover:text-navy-900 pt-2"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Return to Public Website</span>
-          </Link>
+          <div className="pt-2 border-t border-navy-50 space-y-1">
+            <SignOutButton />
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-[11px] font-semibold text-navy-600 hover:text-navy-900"
+            >
+              <span>Return to Public Website</span>
+            </Link>
+          </div>
         </div>
       </aside>
 

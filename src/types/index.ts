@@ -1,9 +1,16 @@
 export type UserRole =
   | "SUPER_ADMIN"
+  | "DIRECTOR"
   | "ADMIN"
+  | "ADVISOR"
+  | "FINANCIAL_ANALYST"
+  | "DOCUMENT_EXECUTIVE"
+  | "RELATIONSHIP_MANAGER"
+  | "CONTENT_MANAGER"
+  | "SUPPORT"
+  | "CLIENT"
   | "LEAD_ADVISOR"
   | "ANALYST"
-  | "CLIENT"
   | "PARTNER_CA";
 
 export type ProjectStage =

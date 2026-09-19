@@ -47,6 +47,26 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = React.useState<{ fullName: string; role: string; email: string } | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/login";
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-warm-100/70 text-navy-dark">
@@ -58,13 +78,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="text-[10px] uppercase tracking-wider text-gold font-bold block">
               Management & Underwriting
             </span>
-            <p className="text-xs font-bold text-white mt-0.5">Admin & Advisor Desk</p>
+            <p className="text-xs font-bold text-white mt-0.5 truncate">
+              {currentUser?.fullName || "Admin & Advisor Desk"}
+            </p>
             <span className="inline-block mt-1 text-[9px] font-semibold bg-gold/20 text-gold-light px-2 py-0.5 rounded">
-              Role: SUPER_ADMIN
+              Role: {currentUser?.role || "SUPER_ADMIN"}
             </span>
           </div>
 
-          <nav className="space-y-0.5 text-xs font-semibold max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+          <nav className="space-y-0.5 text-xs font-semibold max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
             {adminNavigation.map((item) => {
               const Icon = ICON_MAP[item.icon || "LayoutDashboard"] || LayoutDashboard;
               const isActive = pathname === item.href;
@@ -87,11 +109,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="p-4 border-t border-navy-100 space-y-2">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-[11px] font-semibold text-navy-600 hover:text-navy-900"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-2 text-[11px] font-bold text-rose-600 hover:text-rose-800 px-2 py-1.5 rounded hover:bg-rose-50 transition-all text-left"
           >
             <LogOut className="h-3.5 w-3.5" />
+            <span>Sign Out Workspace</span>
+          </button>
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-[11px] font-semibold text-navy-600 hover:text-navy-900 px-2 py-1"
+          >
             <span>Return to Public Site</span>
           </Link>
         </div>
