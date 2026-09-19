@@ -1,15 +1,17 @@
 import { prisma } from "@/lib/db/prisma";
-import { Project, ProjectStage, ProjectStatus } from "@prisma/client";
+import { Project, ProjectStageType, ProjectStatus } from "@prisma/client";
 
 export class ProjectRepository {
   async findById(id: string) {
     return prisma.project.findUnique({
       where: { id },
       include: {
-        company: true,
+        organization: true,
         client: true,
-        leadAdvisor: true,
-        milestones: { orderBy: { orderIndex: "asc" } },
+        assignedAdvisor: true,
+        stages: { orderBy: { orderIndex: "asc" } },
+        projectTasks: { orderBy: { dueDate: "asc" } },
+        applications: { include: { institution: true } },
         documents: true,
         invoices: true,
       },
@@ -20,8 +22,9 @@ export class ProjectRepository {
     return prisma.project.findMany({
       where: { clientId },
       include: {
-        company: true,
-        milestones: { orderBy: { orderIndex: "asc" } },
+        organization: true,
+        assignedAdvisor: true,
+        stages: { orderBy: { orderIndex: "asc" } },
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -30,15 +33,15 @@ export class ProjectRepository {
   async findAllActive() {
     return prisma.project.findMany({
       include: {
-        company: true,
+        organization: true,
         client: true,
-        leadAdvisor: true,
+        assignedAdvisor: true,
       },
       orderBy: { updatedAt: "desc" },
     });
   }
 
-  async updateStage(projectId: string, stage: ProjectStage, status?: ProjectStatus) {
+  async updateStage(projectId: string, stage: ProjectStageType, status?: ProjectStatus) {
     return prisma.project.update({
       where: { id: projectId },
       data: {

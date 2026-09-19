@@ -1,6 +1,6 @@
 import { projectRepository } from "../repositories/project.repository";
 import { logAuditEvent } from "../audit/audit-logger";
-import { ProjectStage, ProjectStatus } from "@prisma/client";
+import { ProjectStageType, ProjectStatus } from "@prisma/client";
 
 export class ProjectService {
   async getProjectDetails(projectId: string) {
@@ -13,7 +13,7 @@ export class ProjectService {
 
   async advanceStage(
     projectId: string,
-    newStage: ProjectStage,
+    newStage: ProjectStageType,
     actor: { id: string; email: string; role: string }
   ) {
     const updated = await projectRepository.updateStage(projectId, newStage);

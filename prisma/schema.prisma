@@ -7,6 +7,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ============================================================================
+// ENUMS
+// ============================================================================
+
 enum UserRole {
   SUPER_ADMIN
   DIRECTOR
@@ -18,6 +22,7 @@ enum UserRole {
   CONTENT_MANAGER
   SUPPORT
   CLIENT
+  // Legacy compatibility aliases
   LEAD_ADVISOR
   ANALYST
   PARTNER_CA
@@ -29,22 +34,33 @@ enum BusinessConstitution {
   LLP
   PRIVATE_LIMITED
   PUBLIC_LIMITED
+  TRUST_SOCIETY
   OTHER
 }
 
-enum ProjectStage {
+enum ProjectStageType {
+  // 11 Core Institutional Lifecycle Stages
+  ONBOARDING
+  DOCUMENT_COLLECTION
+  FINANCIAL_ASSESSMENT
+  DPR_PREPARATION
+  CMA_PREPARATION
+  APPLICATION_PREPARATION
+  SUBMITTED_TO_INSTITUTION
+  QUERY_RESOLUTION
+  DECISION_OR_SANCTION
+  POST_SANCTION
+  COMPLETED
+  // Legacy aliases
   IDEA_FEASIBILITY
   BUSINESS_SETUP
   COMPLIANCE_REGISTRATIONS
   PROJECT_PLANNING
-  DPR_PREPARATION
   CMA_DATA_PREPARATION
   FINANCIAL_MODELLING
   FINANCE_READINESS_REVIEW
   LOAN_PRODUCT_DISCOVERY
-  APPLICATION_PREPARATION
   BANK_COORDINATION
-  QUERY_RESOLUTION
   SANCTION_DECISION
   POST_SANCTION_DISBURSEMENT
 }
@@ -57,6 +73,45 @@ enum ProjectStatus {
   SANCTIONED
   REVISION_REQUIRED
   ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  COMPLETED
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum FinancialInstitutionType {
+  PUBLIC_SECTOR_BANK
+  PRIVATE_BANK
+  NBFC
+  DEVELOPMENT_FINANCIAL_INSTITUTION
+  COOPERATIVE_BANK
+  FOREIGN_BANK
+  OTHER
+}
+
+enum ApplicationStatus {
+  DRAFT
+  DOCUMENTATION_PENDING
+  SUBMITTED
+  UNDER_APPRAISAL
+  QUERIES_RAISED
+  SANCTIONED
+  REJECTED
+  DISBURSED
+  WITHDRAWN
 }
 
 enum DocumentCategory {
@@ -83,8 +138,16 @@ enum DocumentStatus {
 enum InvoiceStatus {
   DRAFT
   ISSUED
+  PARTIALLY_PAID
   PAID
   CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
 enum TicketPriority {
@@ -116,385 +179,18 @@ enum LeadStatus {
   CLOSED
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  fullName      String
-  role          UserRole  @default(CLIENT)
-  phone         String?
-  isMfaEnabled          Boolean   @default(false)
-  mfaSecret             String?
-  failedLoginAttempts   Int       @default(0)
-  lockedUntil           DateTime?
-  emailVerified         DateTime?
-  backupCodesJson       String?
-  status                String    @default("ACTIVE")
-  lastLoginAt           DateTime?
-  lastLoginIp           String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  companyProfile CompanyProfile?
-  assignedProjects Project[] @relation("AdvisorAssignedProjects")
-  createdProjects Project[] @relation("ClientCreatedProjects")
-  supportTickets SupportTicket[]
-  messagesSent Message[] @relation("SentMessages")
-  messagesReceived Message[] @relation("ReceivedMessages")
-  meetings Meeting[]
-  auditLogs AuditLog[]
-  assessments Assessment[]
-  sessions Session[]
-  passwordResetTokens PasswordResetToken[]
-  verificationTokens EmailVerificationToken[]
-
-  @@index([email])
-  @@index([role])
+enum ConversationType {
+  DIRECT
+  PROJECT_TEAM
+  ADVISORY_DESK
 }
 
-model Session {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String    @unique
-  expiresAt    DateTime
-  ipAddress    String?
-  userAgent    String?
-  lastActiveAt DateTime  @default(now())
-  isRevoked    Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-
-  @@index([userId])
-  @@index([token])
-}
-
-model PasswordResetToken {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash    String    @unique
-  expiresAt    DateTime
-  usedAt       DateTime?
-  createdAt    DateTime  @default(now())
-
-  @@index([userId])
-  @@index([tokenHash])
-}
-
-model EmailVerificationToken {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash    String    @unique
-  expiresAt    DateTime
-  usedAt       DateTime?
-  createdAt    DateTime  @default(now())
-
-  @@index([userId])
-  @@index([tokenHash])
-}
-
-model CompanyProfile {
-  id                    String               @id @default(cuid())
-  userId                String               @unique
-  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName           String
-  constitution          BusinessConstitution @default(PRIVATE_LIMITED)
-  udyamNumber           String?
-  gstNumber             String?
-  panNumber             String?
-  cinNumber             String?
-  industrySector        String
-  businessVintageYears  Int                  @default(0)
-  annualTurnoverInLakhs Float                @default(0)
-  existingDebtInLakhs   Float                @default(0)
-  address               String?
-  state                 String?
-  pinCode               String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-
-  projects Project[]
-}
-
-model Project {
-  id                   String        @id @default(cuid())
-  companyId            String
-  company              CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  clientId             String
-  client               User          @relation("ClientCreatedProjects", fields: [clientId], references: [id])
-  leadAdvisorId        String?
-  leadAdvisor          User?         @relation("AdvisorAssignedProjects", fields: [leadAdvisorId], references: [id])
-  title                String
-  projectSector        String
-  totalProjectCostInLakhs Float
-  requestedLoanAmountInLakhs Float
-  promoterContributionInLakhs Float
-  targetLenders        String?       // JSON or comma separated target banks/NBFCs
-  currentStage         ProjectStage  @default(IDEA_FEASIBILITY)
-  status               ProjectStatus @default(IN_PROGRESS)
-  targetCompletionDate DateTime?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-
-  milestones    ProjectMilestone[]
-  activities    ProjectActivity[]
-  documents     Document[]
-  invoices      Invoice[]
-  messages      Message[]
-  supportTickets SupportTicket[]
-  meetings      Meeting[]
-  cmaWorkspaces CmaWorkspace[]
-  dprWorkspaces DprWorkspace[]
-
-  @@index([clientId])
-  @@index([leadAdvisorId])
-  @@index([currentStage])
-}
-
-model ProjectMilestone {
-  id           String       @id @default(cuid())
-  projectId    String
-  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stage        ProjectStage
-  title        String
-  description  String?
-  isCompleted  Boolean      @default(false)
-  completedAt  DateTime?
-  orderIndex   Int          @default(0)
-  pendingActor String       @default("VS Advisory") // "Client" | "VS Advisory" | "Bank"
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  @@index([projectId])
-}
-
-model ProjectActivity {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  actorId     String
-  actorName   String
-  actorRole   String
-  action      String
-  details     String?
-  createdAt   DateTime @default(now())
-
-  @@index([projectId])
-}
-
-model Document {
-  id               String           @id @default(cuid())
-  projectId        String
-  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  category         DocumentCategory
-  title            String
-  fileName         String
-  fileKey          String           // S3 object key (no public URL)
-  fileSize         Int              @default(0)
-  mimeType         String           @default("application/pdf")
-  status           DocumentStatus   @default(PENDING_UPLOAD)
-  rejectionRemarks String?
-  uploadedByUserId String?
-  verifiedByUserId String?
-  verifiedAt       DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-
-  @@index([projectId])
-  @@index([status])
-}
-
-model ReadinessAssessment {
-  id                     String   @id @default(cuid())
-  companyName            String
-  contactEmail           String
-  contactPhone           String?
-  businessVintageYears   Int
-  annualTurnoverInLakhs  Float
-  netProfitMarginPercent Float
-  cibilScoreBracket      String
-  existingDebtInLakhs    Float
-  collateralValueInLakhs Float
-  gstComplianceTrack     String
-  indicativeScore        Int
-  riskCategory           String
-  recommendedFacilities  String   // JSON string of potentially suitable products
-  actionableInsights     String   // JSON string of improvement areas
-  createdAt              DateTime @default(now())
-
-  @@index([contactEmail])
-}
-
-model CmaWorkspace {
-  id             String   @id @default(cuid())
-  projectId      String
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title          String
-  operatingData  String   // JSON containing Form I to Form VI
-  mpbfMethod1    Float?
-  mpbfMethod2    Float?
-  projectedDscr  Float?
-  projectedCurrentRatio Float?
-  status         String   @default("DRAFT")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([projectId])
-}
-
-model DprWorkspace {
-  id                   String   @id @default(cuid())
-  projectId            String
-  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title                String
-  executiveSummary     String?
-  promoterBackground   String?
-  technicalFeasibility String?
-  marketPotential      String?
-  financialPlan        String?  // JSON
-  swotAnalysis         String?  // JSON
-  status               String   @default("DRAFT")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  @@index([projectId])
-}
-
-model Invoice {
-  id                String        @id @default(cuid())
-  projectId         String
-  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  invoiceNumber     String        @unique
-  milestoneTitle    String
-  amount            Float
-  gstAmount         Float
-  totalAmount       Float
-  status            InvoiceStatus @default(ISSUED)
-  razorpayOrderId   String?
-  razorpayPaymentId String?
-  dueDate           DateTime
-  paidAt            DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  @@index([projectId])
-}
-
-model Message {
-  id             String   @id @default(cuid())
-  projectId      String
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  senderId       String
-  sender         User     @relation("SentMessages", fields: [senderId], references: [id])
-  recipientId    String?
-  recipient      User?    @relation("ReceivedMessages", fields: [recipientId], references: [id])
-  content        String
-  attachmentKey  String?
-  isRead         Boolean  @default(false)
-  createdAt      DateTime @default(now())
-
-  @@index([projectId])
-  @@index([senderId])
-}
-
-model SupportTicket {
-  id             String         @id @default(cuid())
-  projectId      String
-  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User           @relation(fields: [userId], references: [id])
-  ticketNumber   String         @unique
-  subject        String
-  description    String
-  priority       TicketPriority @default(MEDIUM)
-  status         TicketStatus   @default(OPEN)
-  assignedToName String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  @@index([projectId])
-  @@index([status])
-}
-
-model Meeting {
-  id              String   @id @default(cuid())
-  projectId       String
-  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  advisorName     String
-  title           String
-  scheduledAt     DateTime
-  durationMinutes Int      @default(45)
-  meetingUrl      String?
-  status          String   @default("SCHEDULED")
-  notes           String?
-  createdAt       DateTime @default(now())
-
-  @@index([projectId])
-}
-
-model KnowledgeArticle {
-  id                 String        @id @default(cuid())
-  slug               String        @unique
-  title              String
-  category           String        // RBI Circular, Subsidy Scheme, Banking Norm, Tax & Compliance
-  summary            String
-  content            String
-  sourceUrl          String
-  issuingAuthority   String        // RBI, Ministry of MSME, SIDBI, GST Council
-  publicationDate    DateTime
-  effectiveDate      DateTime
-  lastReviewedDate   DateTime
-  reviewedBy         String
-  applicableAudience String        // MSMEs, Manufacturing Units, Exporters, Startups
-  status             ArticleStatus @default(PUBLISHED)
-  tags               String?       // comma separated
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-
-  @@index([slug])
-  @@index([category])
-}
-
-model Lead {
-  id                     String     @id @default(cuid())
-  fullName               String
-  email                  String
-  phone                  String
-  businessName           String
-  industry               String
-  estimatedLoanAmount    Float?     // in Lakhs
-  loanType               String?
-  source                 String     @default("WEBSITE_INTAKE")
-  status                 LeadStatus @default(NEW)
-  assignedAdvisorName    String?
-  notes                  String?
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-
-  @@index([status])
-  @@index([email])
-}
-
-model AuditLog {
-  id           String   @id @default(cuid())
-  actorId      String
-  actorEmail   String
-  actorRole    String
-  actor        User?    @relation(fields: [actorId], references: [id])
-  action       String   // e.g. DOCUMENT_VERIFIED, CMA_UPDATED, INVOICE_PAID, LOGIN_SUCCESS
-  resource     String   // e.g. Document, CmaWorkspace, Invoice
-  resourceId   String?
-  ipAddress    String?
-  userAgent    String?
-  metadataJson String?
-  createdAt    DateTime @default(now())
-
-  @@index([actorId])
-  @@index([action])
-  @@index([resource])
+enum NotificationType {
+  INFO
+  ACTION_REQUIRED
+  STATUS_UPDATE
+  WARNING
+  SUCCESS
 }
 
 enum ReadinessBand {
@@ -522,11 +218,807 @@ enum AssessmentStatus {
   ARCHIVED
 }
 
+// ============================================================================
+// 1. IDENTITY, ACCESS CONTROL & ORGANIZATION
+// ============================================================================
+
+model User {
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  passwordHash        String
+  fullName            String
+  role                UserRole        @default(CLIENT)
+  phone               String?
+  avatarUrl           String?
+  isMfaEnabled        Boolean         @default(false)
+  mfaSecret           String?
+  failedLoginAttempts Int             @default(0)
+  lockedUntil         DateTime?
+  emailVerified       DateTime?
+  backupCodesJson     String?
+  status              String          @default("ACTIVE")
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  organizationId      String?
+  organization        Organization?   @relation(fields: [organizationId], references: [id])
+  clientProfile       ClientProfile?
+  companyProfile      CompanyProfile? // Legacy compatibility
+
+  // Relations
+  userRoles             UserRoleAssignment[]
+  assignedProjects      Project[]                @relation("AdvisorAssignedProjects")
+  clientProjects        Project[]                @relation("ClientCreatedProjects")
+  assignedProjectStages ProjectStage[]           @relation("AdvisorAssignedStages")
+  assignedProjectTasks  ProjectTask[]            @relation("AssignedProjectTasks")
+  assignedTasks         Task[]                   @relation("AssignedTasks")
+  createdTasks          Task[]                   @relation("CreatedTasks")
+  leadsAssigned         Lead[]                   @relation("AdvisorAssignedLeads")
+  leadActivities        LeadActivity[]
+  consultations         Consultation[]
+  meetings              Meeting[]
+  tickets               Ticket[]
+  supportTickets        SupportTicket[] // Legacy compatibility
+  ticketMessages        TicketMessage[]
+  messagesSent          Message[]                @relation("SentMessages")
+  messagesReceived      Message[]                @relation("ReceivedMessages")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  fileAccessLogs        FileAccessLog[]
+  aiRequests            AIRequest[]
+  sessions              Session[]
+  passwordResetTokens   PasswordResetToken[]
+  verificationTokens    EmailVerificationToken[]
+
+  // Readiness Engine
+  readinessAssessments FinanceReadinessAssessment[]
+  assessments          Assessment[] // Legacy compatibility
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Organization {
+  id                    String               @id @default(cuid())
+  name                  String
+  legalName             String?
+  constitution          BusinessConstitution @default(PRIVATE_LIMITED)
+  panNumber             String?
+  gstNumber             String?
+  udyamNumber           String?
+  cinNumber             String?
+  industry              String?
+  businessVintageYears  Int                  @default(0)
+  annualTurnoverInLakhs Float                @default(0)
+  existingDebtInLakhs   Float                @default(0)
+  address               String?
+  city                  String?
+  state                 String?
+  pinCode               String?
+  status                String               @default("ACTIVE")
+
+  // Relations
+  users          User[]
+  clientProfiles ClientProfile[]
+  projects       Project[]
+  invoices       Invoice[]
+  subscriptions  Subscription[]
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([name])
+  @@index([gstNumber])
+  @@index([panNumber])
+}
+
+model Role {
+  id          String               @id @default(cuid())
+  code        String               @unique // e.g. SUPER_ADMIN, ADVISOR, FINANCIAL_ANALYST
+  name        String
+  description String?
+  isSystem    Boolean              @default(false)
+  status      String               @default("ACTIVE")
+  permissions RolePermission[]
+  users       UserRoleAssignment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([code])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique // e.g. projects.view, dpr.create, cma.create
+  name        String
+  module      String // e.g. projects, documents, billing, users
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([code])
+  @@index([module])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model UserRoleAssignment {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedById String?
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model ClientProfile {
+  id                      String        @id @default(cuid())
+  userId                  String        @unique
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId          String?
+  organization            Organization? @relation(fields: [organizationId], references: [id])
+  authorizedSignatoryName String?
+  designation             String?
+  netWorthInLakhs         Float?
+  cibilScore              Int?
+  directorsJson           String? // JSON array of promoters/directors
+  bankRelationshipsJson   String? // JSON array of existing lending banks
+  deletedAt               DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  lastActiveAt DateTime @default(now())
+  isRevoked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// Legacy compatibility
+model CompanyProfile {
+  id                    String               @id @default(cuid())
+  userId                String               @unique
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName           String
+  constitution          BusinessConstitution @default(PRIVATE_LIMITED)
+  udyamNumber           String?
+  gstNumber             String?
+  panNumber             String?
+  cinNumber             String?
+  industrySector        String
+  businessVintageYears  Int                  @default(0)
+  annualTurnoverInLakhs Float                @default(0)
+  existingDebtInLakhs   Float                @default(0)
+  address               String?
+  state                 String?
+  pinCode               String?
+  projects              Project[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+}
+
+// ============================================================================
+// 2. CRM & LEAD PIPELINE
+// ============================================================================
+
+model Lead {
+  id                  String         @id @default(cuid())
+  fullName            String
+  email               String
+  phone               String
+  businessName        String
+  industry            String
+  estimatedLoanAmount Float? // in Lakhs
+  loanType            String?
+  source              String         @default("WEBSITE_INTAKE")
+  status              LeadStatus     @default(NEW)
+  assignedAdvisorId   String?
+  assignedAdvisor     User?          @relation("AdvisorAssignedLeads", fields: [assignedAdvisorId], references: [id])
+  assignedAdvisorName String? // Legacy fallback
+  convertedToUserId   String?
+  notes               String?
+  activities          LeadActivity[]
+  consultations       Consultation[]
+  deletedAt           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([assignedAdvisorId])
+}
+
+model LeadActivity {
+  id            String   @id @default(cuid())
+  leadId        String
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type          String // CALL, EMAIL, MEETING, NOTE, STATUS_CHANGE
+  description   String
+  performedById String?
+  performedBy   User?    @relation(fields: [performedById], references: [id])
+  metadataJson  String?
+  createdAt     DateTime @default(now())
+
+  @@index([leadId])
+  @@index([performedById])
+}
+
+model Consultation {
+  id                String    @id @default(cuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id])
+  leadId            String?
+  lead              Lead?     @relation(fields: [leadId], references: [id])
+  serviceType       String // e.g. "Term Loan Advisory", "DPR Preparation"
+  preferredDate     DateTime?
+  preferredTimeSlot String?
+  topic             String
+  status            String    @default("REQUESTED") // REQUESTED, SCHEDULED, COMPLETED, CANCELLED
+  notes             String?
+  meeting           Meeting?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([status])
+}
+
+// ============================================================================
+// 3. CORE ADVISORY PROJECTS & WORKFLOW
+// ============================================================================
+
+model Project {
+  id                          String           @id @default(cuid())
+  clientId                    String
+  client                      User             @relation("ClientCreatedProjects", fields: [clientId], references: [id])
+  organizationId              String?
+  organization                Organization?    @relation(fields: [organizationId], references: [id])
+  companyId                   String? // Legacy compatibility
+  company                     CompanyProfile?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title                       String
+  projectType                 String           @default("TERM_LOAN") // TERM_LOAN, WORKING_CAPITAL, GREENFIELD, SUBSIDY
+  industry                    String
+  projectSector               String? // Legacy alias for industry
+  projectCost                 Float // In Lakhs
+  totalProjectCostInLakhs     Float? // Legacy alias
+  financeRequirement          Float // In Lakhs
+  requestedLoanAmountInLakhs  Float? // Legacy alias
+  promoterContribution        Float?           @default(0)
+  promoterContributionInLakhs Float? // Legacy alias
+  targetLenders               String? // Comma-separated or JSON target banks
+  status                      ProjectStatus    @default(IN_PROGRESS)
+  currentStage                ProjectStageType @default(ONBOARDING)
+  assignedAdvisorId           String?
+  assignedAdvisor             User?            @relation("AdvisorAssignedProjects", fields: [assignedAdvisorId], references: [id])
+  leadAdvisorId               String? // Legacy alias
+  targetDate                  DateTime?
+  targetCompletionDate        DateTime? // Legacy alias
+  completionPercentage        Int              @default(0)
+  createdBy                   String?
+  updatedBy                   String?
+
+  // Relations
+  stages           ProjectStage[]
+  milestones       ProjectMilestone[] // Legacy compatibility
+  projectTasks     ProjectTask[]
+  activities       ProjectActivity[] // Legacy compatibility
+  applications     Application[]
+  documents        Document[]
+  documentRequests DocumentRequest[]
+  dprs             DPR[]
+  cmas             CMA[]
+  financialModels  FinancialModel[]
+  invoices         Invoice[]
+  messages         Message[]
+  conversations    Conversation[]
+  tickets          Ticket[]
+  supportTickets   SupportTicket[] // Legacy compatibility
+  meetings         Meeting[]
+  cmaWorkspaces    CmaWorkspace[] // Legacy compatibility
+  dprWorkspaces    DprWorkspace[] // Legacy compatibility
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([organizationId])
+  @@index([assignedAdvisorId])
+  @@index([currentStage])
+  @@index([status])
+}
+
+model ProjectStage {
+  id           String           @id @default(cuid())
+  projectId    String
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage        ProjectStageType
+  title        String
+  status       String           @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, BLOCKED
+  orderIndex   Int              @default(0)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  notes        String?
+  assignedToId String?
+  assignedTo   User?            @relation("AdvisorAssignedStages", fields: [assignedToId], references: [id])
+  tasks        ProjectTask[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([stage])
+  @@index([status])
+}
+
+model ProjectTask {
+  id             String        @id @default(cuid())
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectStageId String?
+  projectStage   ProjectStage? @relation(fields: [projectStageId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  priority       TaskPriority  @default(MEDIUM)
+  status         TaskStatus    @default(TODO)
+  assignedToId   String?
+  assignedTo     User?         @relation("AssignedProjectTasks", fields: [assignedToId], references: [id])
+  dueDate        DateTime?
+  completedAt    DateTime?
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([projectStageId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+// Legacy milestone model
+model ProjectMilestone {
+  id           String           @id @default(cuid())
+  projectId    String
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage        ProjectStageType
+  title        String
+  description  String?
+  isCompleted  Boolean          @default(false)
+  completedAt  DateTime?
+  orderIndex   Int              @default(0)
+  pendingActor String           @default("VS Advisory")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([projectId])
+}
+
+// Legacy project activity model
+model ProjectActivity {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId   String
+  actorName String
+  actorRole String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ============================================================================
+// 4. INSTITUTIONAL LENDING & APPLICATIONS
+// ============================================================================
+
+model FinancialInstitution {
+  id                    String                   @id @default(cuid())
+  name                  String
+  code                  String                   @unique // e.g. SBI, HDFC, SIDBI, BOB, PNB
+  type                  FinancialInstitutionType @default(PUBLIC_SECTOR_BANK)
+  category              String? // MSME Preferred, Infrastructure, Large Corporate
+  headquartersCity      String?
+  contactPerson         String?
+  email                 String?
+  phone                 String?
+  websiteUrl            String?
+  portalUrl             String?
+  supportedProductsJson String? // JSON array of loan schemes
+  status                String                   @default("ACTIVE")
+  applications          Application[]
+  deletedAt             DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([code])
+  @@index([type])
+  @@index([status])
+}
+
+model Application {
+  id                String               @id @default(cuid())
+  projectId         String
+  project           Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  institutionId     String
+  institution       FinancialInstitution @relation(fields: [institutionId], references: [id])
+  applicationNumber String?              @unique
+  loanProduct       String // e.g. "Term Loan - MSME Scheme", "Working Capital Facility"
+  requestedAmount   Float // In Lakhs
+  sanctionedAmount  Float? // In Lakhs
+  interestRate      Float? // e.g. 9.25
+  tenureMonths      Int?
+  status            ApplicationStatus    @default(DRAFT)
+  submittedAt       DateTime?
+  sanctionedAt      DateTime?
+  sanctionLetterKey String? // Secure S3 object key
+  rejectionReason   String?
+  notes             String?
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([projectId])
+  @@index([institutionId])
+  @@index([status])
+  @@index([applicationNumber])
+}
+
+// ============================================================================
+// 5. SECURE DOCUMENT MANAGEMENT
+// ============================================================================
+
+model Document {
+  id               String            @id @default(cuid())
+  projectId        String
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category         DocumentCategory
+  title            String
+  fileName         String
+  fileKey          String // Secure S3 object key (no public URL)
+  fileSize         Int               @default(0)
+  mimeType         String            @default("application/pdf")
+  status           DocumentStatus    @default(PENDING_UPLOAD)
+  rejectionRemarks String?
+  uploadedByUserId String?
+  verifiedByUserId String?
+  verifiedAt       DateTime?
+  currentVersion   Int               @default(1)
+  versions         DocumentVersion[]
+  accessLogs       FileAccessLog[]
+  deletedAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([category])
+}
+
+model DocumentVersion {
+  id               String   @id @default(cuid())
+  documentId       String
+  document         Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNumber    Int
+  fileName         String
+  fileKey          String
+  fileSize         Int
+  mimeType         String
+  uploadedByUserId String?
+  changeSummary    String?
+  createdAt        DateTime @default(now())
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+}
+
+model DocumentRequest {
+  id                  String           @id @default(cuid())
+  projectId           String
+  project             Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title               String
+  description         String?
+  category            DocumentCategory
+  status              String           @default("PENDING") // PENDING, FULFILLED, WAIVED
+  requestedByUserId   String?
+  dueDate             DateTime?
+  fulfilledDocumentId String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model FileAccessLog {
+  id                String   @id @default(cuid())
+  documentId        String
+  document          Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersionId String?
+  accessedByUserId  String
+  accessedByUser    User     @relation(fields: [accessedByUserId], references: [id])
+  action            String   @default("DOWNLOAD") // VIEW, DOWNLOAD, PREVIEW
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+
+  @@index([documentId])
+  @@index([accessedByUserId])
+  @@index([action])
+}
+
+// ============================================================================
+// 6. FINANCIAL ENGINEERING (DPR, CMA & FINANCIAL MODELS)
+// ============================================================================
+
+model DPR {
+  id                   String       @id @default(cuid())
+  projectId            String
+  project              Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title                String
+  version              Int          @default(1)
+  status               String       @default("DRAFT") // DRAFT, IN_REVIEW, APPROVED, FINALIZED
+  executiveSummary     String?
+  promoterBackground   String?
+  technicalFeasibility String?
+  marketAnalysis       String?
+  costEstimatesJson    String? // JSON breakdown of project costs
+  meansOfFinanceJson   String? // JSON debt-equity-subsidy mix
+  projectionsJson      String? // JSON 5-7 year revenue & profit projections
+  swotAnalysisJson     String? // JSON strengths, weaknesses, ops, threats
+  versions             DPRVersion[]
+  deletedAt            DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model DPRVersion {
+  id              String   @id @default(cuid())
+  dprId           String
+  dpr             DPR      @relation(fields: [dprId], references: [id], onDelete: Cascade)
+  versionNumber   Int
+  contentJson     String
+  generatedPdfKey String?
+  createdByUserId String?
+  changeNotes     String?
+  createdAt       DateTime @default(now())
+
+  @@unique([dprId, versionNumber])
+  @@index([dprId])
+}
+
+model CMA {
+  id                  String       @id @default(cuid())
+  projectId           String
+  project             Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title               String
+  version             Int          @default(1)
+  status              String       @default("DRAFT") // DRAFT, IN_REVIEW, APPROVED, FINALIZED
+  historicalYears     Int          @default(3)
+  projectedYears      Int          @default(5)
+  operatingDataJson   String // JSON containing Form I to Form VI
+  mpbfMethod1         Float? // Tandon Method 1 Working Capital
+  mpbfMethod2         Float? // Tandon Method 2 Working Capital
+  dscrAverage         Float?
+  currentRatioAverage Float?
+  versions            CMAVersion[]
+  deletedAt           DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model CMAVersion {
+  id                   String   @id @default(cuid())
+  cmaId                String
+  cma                  CMA      @relation(fields: [cmaId], references: [id], onDelete: Cascade)
+  versionNumber        Int
+  operatingDataJson    String
+  financialSummaryJson String?
+  createdByUserId      String?
+  changeNotes          String?
+  createdAt            DateTime @default(now())
+
+  @@unique([cmaId, versionNumber])
+  @@index([cmaId])
+}
+
+model FinancialModel {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  modelType       String    @default("DCF_PROJECTION") // DCF_PROJECTION, SENSITIVITY, BREAK_EVEN, WORKING_CAPITAL
+  inputsJson      String
+  outputsJson     String
+  irrPercent      Float?
+  npvValue        Float?
+  paybackYears    Float?
+  status          String    @default("DRAFT")
+  createdByUserId String?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([modelType])
+}
+
+// Legacy workspaces
+model CmaWorkspace {
+  id                    String   @id @default(cuid())
+  projectId             String
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title                 String
+  operatingData         String
+  mpbfMethod1           Float?
+  mpbfMethod2           Float?
+  projectedDscr         Float?
+  projectedCurrentRatio Float?
+  status                String   @default("DRAFT")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model DprWorkspace {
+  id                   String   @id @default(cuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title                String
+  executiveSummary     String?
+  promoterBackground   String?
+  technicalFeasibility String?
+  marketPotential      String?
+  financialPlan        String?
+  swotAnalysis         String?
+  status               String   @default("DRAFT")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+// ============================================================================
+// 7. FINANCE READINESS ENGINE
+// ============================================================================
+
+model FinanceReadinessAssessment {
+  id           String                     @id @default(cuid())
+  userId       String?
+  user         User?                      @relation(fields: [userId], references: [id])
+  guestEmail   String?
+  guestName    String?
+  guestPhone   String?
+  guestCompany String?
+  status       AssessmentStatus           @default(DRAFT)
+  responses    FinanceReadinessResponse[]
+  result       FinanceReadinessResult?
+  deletedAt    DateTime?
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  @@index([userId])
+  @@index([guestEmail])
+  @@index([status])
+}
+
+model FinanceReadinessResponse {
+  id           String                     @id @default(cuid())
+  assessmentId String
+  assessment   FinanceReadinessAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionKey  String
+  valueString  String?
+  valueNumber  Float?
+  valueBoolean Boolean?
+  valueJson    String?
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  @@unique([assessmentId, questionKey])
+  @@index([assessmentId])
+}
+
+model FinanceReadinessResult {
+  id                    String                     @id @default(cuid())
+  assessmentId          String                     @unique
+  assessment            FinanceReadinessAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  overallScore          Float
+  band                  ReadinessBand
+  bandLabel             String
+  categoryScoresJson    String
+  strengthsJson         String
+  weaknessesJson        String
+  missingItemsJson      String
+  recommendationsJson   String
+  suggestedServicesJson String
+  checklistJson         String
+  disclaimer            String
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+
+  @@index([overallScore])
+  @@index([band])
+}
+
+// Legacy readiness models
 model AssessmentCategory {
   id          String               @id @default(cuid())
-  slug        String               @unique // e.g. business-profile, financial-strength
-  name        String               // e.g. Business Profile
-  weight      Float                // Configurable weight (e.g. 0.10 for 10%)
+  slug        String               @unique
+  name        String
+  weight      Float
   orderIndex  Int                  @default(0)
   description String?
   questions   AssessmentQuestion[]
@@ -541,13 +1033,13 @@ model AssessmentQuestion {
   id           String             @id @default(cuid())
   categoryId   String
   category     AssessmentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  questionKey  String             @unique // unique identifier code
+  questionKey  String             @unique
   questionText String
   helpText     String?
   type         QuestionType       @default(SINGLE_CHOICE)
   orderIndex   Int                @default(0)
   isRequired   Boolean            @default(true)
-  weight       Float              @default(1.0) // within-category relative weight
+  weight       Float              @default(1.0)
   options      AssessmentOption[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -563,9 +1055,9 @@ model AssessmentOption {
   question          AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
   label             String
   value             String
-  score             Float              @default(0) // Normalized points (0-100)
+  score             Float              @default(0)
   orderIndex        Int                @default(0)
-  flagMissing       Boolean            @default(false) // True if choosing this indicates missing critical requirement
+  flagMissing       Boolean            @default(false)
   missingItemLabel  String?
   strengthTag       String?
   weaknessTag       String?
@@ -578,7 +1070,7 @@ model AssessmentOption {
 
 model Assessment {
   id           String               @id @default(cuid())
-  userId       String?              // Optional: guest assessments have null userId
+  userId       String?
   user         User?                @relation(fields: [userId], references: [id])
   guestEmail   String?
   guestName    String?
@@ -603,7 +1095,7 @@ model AssessmentResponse {
   valueString  String?
   valueNumber  Float?
   valueBoolean Boolean?
-  valueJson    String?    // For multiple choice arrays
+  valueJson    String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -612,39 +1104,511 @@ model AssessmentResponse {
 }
 
 model AssessmentResult {
-  id                   String        @id @default(cuid())
-  assessmentId         String        @unique
-  assessment           Assessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  overallScore         Float         // 0 to 100
-  band                 ReadinessBand
-  bandLabel            String        // Neutral: Early Preparation, Developing, Moderate, Strong, Advanced
-  categoryScoresJson   String        // Array of { categorySlug, name, score, weight, weightedContribution }
-  strengthsJson        String        // Array of strengths
-  weaknessesJson       String        // Array of weaknesses
-  missingItemsJson     String        // Array of missing critical items
-  recommendationsJson  String        // Array of recommended actions
-  suggestedServicesJson String       // Array of { title, slug, description }
-  checklistJson        String        // Array of { category, items }
-  disclaimer           String
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  assessmentId          String        @unique
+  assessment            Assessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  overallScore          Float
+  band                  ReadinessBand
+  bandLabel             String
+  categoryScoresJson    String
+  strengthsJson         String
+  weaknessesJson        String
+  missingItemsJson      String
+  recommendationsJson   String
+  suggestedServicesJson String
+  checklistJson         String
+  disclaimer            String
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   @@index([overallScore])
   @@index([band])
 }
 
 model AssessmentRecommendation {
-  id                  String   @id @default(cuid())
-  categorySlug        String
-  conditionKey        String   // e.g. low_profit_margin, missing_gst, low_vintage
-  title               String
-  description         String
-  actionType          String   // IMMEDIATE, MEDIUM_TERM, ADVISORY
+  id                   String   @id @default(cuid())
+  categorySlug         String
+  conditionKey         String
+  title                String
+  description          String
+  actionType           String
   suggestedServiceSlug String?
-  priority            Int      @default(1)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  priority             Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([categorySlug])
   @@index([conditionKey])
+}
+
+model ReadinessAssessment {
+  id                     String   @id @default(cuid())
+  companyName            String
+  contactEmail           String
+  contactPhone           String?
+  businessVintageYears   Int
+  annualTurnoverInLakhs  Float
+  netProfitMarginPercent Float
+  cibilScoreBracket      String
+  existingDebtInLakhs    Float
+  collateralValueInLakhs Float
+  gstComplianceTrack     String
+  indicativeScore        Int
+  riskCategory           String
+  recommendedFacilities  String
+  actionableInsights     String
+  createdAt              DateTime @default(now())
+
+  @@index([contactEmail])
+}
+
+// ============================================================================
+// 8. BILLING, PAYMENTS & SUBSCRIPTIONS
+// ============================================================================
+
+model Invoice {
+  id                String        @id @default(cuid())
+  projectId         String?
+  project           Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  invoiceNumber     String        @unique
+  title             String        @default("Advisory Services Invoice")
+  milestoneTitle    String? // Legacy alias
+  description       String?
+  subtotalAmount    Float         @default(0)
+  taxAmount         Float         @default(0) // GST Amount
+  gstAmount         Float? // Legacy alias
+  amount            Float? // Legacy alias
+  totalAmount       Float
+  currency          String        @default("INR")
+  status            InvoiceStatus @default(ISSUED)
+  razorpayOrderId   String? // Legacy alias
+  razorpayPaymentId String? // Legacy alias
+  dueDate           DateTime
+  paidAt            DateTime?
+  items             InvoiceItem[]
+  payments          Payment[]
+  deletedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([invoiceNumber])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Float
+  taxPercent  Float    @default(18.0) // 18% GST
+  totalAmount Float
+  createdAt   DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  invoiceId        String
+  invoice          Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount           Float
+  currency         String        @default("INR")
+  paymentMethod    String        @default("BANK_TRANSFER") // RAZORPAY, NEFT_RTGS, CHEQUE, UPI
+  gateway          String? // RAZORPAY, MANUAL
+  gatewayPaymentId String?
+  gatewayOrderId   String?
+  gatewaySignature String?
+  status           PaymentStatus @default(COMPLETED)
+  paidAt           DateTime      @default(now())
+  receiptUrl       String?
+  notes            String?
+  createdAt        DateTime      @default(now())
+
+  @@index([invoiceId])
+  @@index([status])
+}
+
+model Subscription {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planName           String // e.g. "Annual Retainer: Corporate Advisory"
+  planCode           String
+  billingInterval    String       @default("ANNUAL") // MONTHLY, QUARTERLY, ANNUAL
+  amount             Float
+  currency           String       @default("INR")
+  status             String       @default("ACTIVE") // ACTIVE, PAST_DUE, CANCELLED, EXPIRED
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ============================================================================
+// 9. TICKETS, MESSAGES, MEETINGS & NOTIFICATIONS
+// ============================================================================
+
+model Ticket {
+  id             String          @id @default(cuid())
+  projectId      String?
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  ticketNumber   String          @unique
+  subject        String
+  description    String
+  priority       TicketPriority  @default(MEDIUM)
+  status         TicketStatus    @default(OPEN)
+  category       String          @default("GENERAL") // DOCUMENTATION, BANK_QUERY, BILLING, DPR_REVISION
+  assignedToId   String?
+  assignedToName String?
+  messages       TicketMessage[]
+  deletedAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([ticketNumber])
+  @@index([status])
+}
+
+model TicketMessage {
+  id             String   @id @default(cuid())
+  ticketId       String
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation(fields: [senderId], references: [id])
+  content        String
+  attachmentKey  String?
+  isInternalOnly Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([senderId])
+}
+
+// Legacy support ticket
+model SupportTicket {
+  id             String         @id @default(cuid())
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  ticketNumber   String         @unique
+  subject        String
+  description    String
+  priority       TicketPriority @default(MEDIUM)
+  status         TicketStatus   @default(OPEN)
+  assignedToName String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model Conversation {
+  id            String           @id @default(cuid())
+  projectId     String?
+  project       Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  type          ConversationType @default(PROJECT_TEAM)
+  messages      Message[]
+  lastMessageAt DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([type])
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User          @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId    String?
+  recipient      User?         @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  content        String
+  attachmentKey  String?
+  isRead         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+
+  @@index([conversationId])
+  @@index([projectId])
+  @@index([senderId])
+}
+
+model Meeting {
+  id              String        @id @default(cuid())
+  projectId       String?
+  project         Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  consultationId  String?       @unique
+  consultation    Consultation? @relation(fields: [consultationId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  advisorName     String
+  title           String
+  description     String?
+  scheduledAt     DateTime
+  durationMinutes Int           @default(45)
+  meetingUrl      String?
+  status          String        @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  notes           String?
+  recordingUrl    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([scheduledAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  actionUrl String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ============================================================================
+// 10. KNOWLEDGE CENTRE, REGULATORY & INDUSTRY INTELLIGENCE
+// ============================================================================
+
+model KnowledgeCategory {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  description String?
+  orderIndex  Int                @default(0)
+  articles    KnowledgeArticle[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([slug])
+  @@index([orderIndex])
+}
+
+model KnowledgeArticle {
+  id                 String             @id @default(cuid())
+  categoryId         String?
+  categoryRef        KnowledgeCategory? @relation(fields: [categoryId], references: [id])
+  category           String // e.g. "RBI Circular", "Subsidy Scheme"
+  slug               String             @unique
+  title              String
+  summary            String
+  content            String
+  sourceUrl          String
+  issuingAuthority   String // RBI, Ministry of MSME, SIDBI, GST Council
+  publicationDate    DateTime
+  effectiveDate      DateTime
+  lastReviewedDate   DateTime
+  reviewedBy         String
+  applicableAudience String // MSMEs, Manufacturing Units, Exporters
+  status             ArticleStatus      @default(PUBLISHED)
+  tags               String?
+  deletedAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([category])
+  @@index([status])
+}
+
+model RegulatoryUpdate {
+  id               String    @id @default(cuid())
+  title            String
+  slug             String    @unique
+  circularNumber   String? // Official notification / circular code
+  issuingAuthority String // RBI, Ministry of Finance, SEBI, SIDBI
+  effectiveDate    DateTime
+  summary          String
+  impactAnalysis   String
+  officialPdfUrl   String?
+  status           String    @default("ACTIVE")
+  tags             String?
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([issuingAuthority])
+  @@index([effectiveDate])
+}
+
+model Industry {
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  icon                   String?
+  overview               String
+  typicalCostHeadsJson   String? // JSON array of capital expenditure heads
+  financingStructureJson String? // JSON debt-equity-subsidy mix
+  keyMetricsJson         String? // JSON benchmark DSCR, ICR, IRR
+  applicableSchemesJson  String? // JSON linked government schemes
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model Service {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  tagline          String?
+  description      String
+  processStepsJson String? // JSON advisory workflow steps
+  deliverablesJson String? // JSON deliverables
+  faqJson          String? // JSON Q&A items
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model GovernmentScheme {
+  id                  String    @id @default(cuid())
+  name                String
+  slug                String    @unique
+  nodalMinistry       String // Ministry of MSME, MoFPI, MNRE, etc.
+  targetSector        String // Manufacturing, Agro-Processing, Solar, etc.
+  eligibilityCriteria String
+  subsidyMechanism    String // Capital Subsidy, Interest Subvention, Collateral Guarantee
+  sourceUrl           String
+  effectiveDate       DateTime?
+  verifiedAt          DateTime?
+  status              String    @default("VERIFIED")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([nodalMinistry])
+}
+
+// ============================================================================
+// 11. TASKS, ACTIVITIES, FORENSIC AUDIT & AI GOVERNANCE
+// ============================================================================
+
+model Task {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  status       TaskStatus   @default(TODO)
+  priority     TaskPriority @default(MEDIUM)
+  dueDate      DateTime?
+  assignedToId String?
+  assignedTo   User?        @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  createdById  String?
+  createdBy    User?        @relation("CreatedTasks", fields: [createdById], references: [id])
+  projectId    String?
+  completedAt  DateTime?
+  deletedAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([projectId])
+  @@index([status])
+}
+
+model Activity {
+  id           String   @id @default(cuid())
+  actorId      String?
+  actorName    String
+  actorRole    String
+  action       String // e.g. STAGE_TRANSITION, DOCUMENT_VERIFIED, CMA_FINALIZED
+  description  String
+  entityType   String // Project, Lead, Document, Invoice, Application
+  entityId     String?
+  projectId    String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String
+  actorEmail   String
+  actorRole    String
+  actor        User?    @relation(fields: [actorId], references: [id])
+  action       String // LOGIN_SUCCESS, ROLE_CHANGED, SENSITIVE_DOCUMENT_ACCESSED, etc.
+  resource     String // User, Document, Project, Invoice
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+}
+
+model AIRequest {
+  id               String     @id @default(cuid())
+  userId           String?
+  user             User?      @relation(fields: [userId], references: [id])
+  projectId        String?
+  promptType       String // CMA_ANALYSIS, DPR_SYNTHESIS, READINESS_REVIEW
+  modelUsed        String // e.g. gemini-1.5-pro, gpt-4o
+  promptTokens     Int        @default(0)
+  completionTokens Int        @default(0)
+  durationMs       Int        @default(0)
+  status           String     @default("COMPLETED")
+  outputs          AIOutput[]
+  createdAt        DateTime   @default(now())
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([promptType])
+}
+
+model AIOutput {
+  id               String    @id @default(cuid())
+  requestId        String
+  request          AIRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  outputType       String // EXECUTIVE_SUMMARY, RATIO_ANALYSIS, RISK_RADAR
+  contentJson      String
+  status           String    @default("GENERATED") // GENERATED, ACCEPTED, REVISED, REJECTED
+  qualityRating    Int? // 1 to 5
+  reviewedByUserId String?
+  createdAt        DateTime  @default(now())
+
+  @@index([requestId])
+  @@index([status])
 }

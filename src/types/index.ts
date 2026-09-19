@@ -14,20 +14,32 @@ export type UserRole =
   | "PARTNER_CA";
 
 export type ProjectStage =
+  // 11 Core Institutional Lifecycle Stages
+  | "ONBOARDING"
+  | "DOCUMENT_COLLECTION"
+  | "FINANCIAL_ASSESSMENT"
+  | "DPR_PREPARATION"
+  | "CMA_PREPARATION"
+  | "APPLICATION_PREPARATION"
+  | "SUBMITTED_TO_INSTITUTION"
+  | "QUERY_RESOLUTION"
+  | "DECISION_OR_SANCTION"
+  | "POST_SANCTION"
+  | "COMPLETED"
+  // Legacy aliases
   | "IDEA_FEASIBILITY"
   | "BUSINESS_SETUP"
   | "COMPLIANCE_REGISTRATIONS"
   | "PROJECT_PLANNING"
-  | "DPR_PREPARATION"
   | "CMA_DATA_PREPARATION"
   | "FINANCIAL_MODELLING"
   | "FINANCE_READINESS_REVIEW"
   | "LOAN_PRODUCT_DISCOVERY"
-  | "APPLICATION_PREPARATION"
   | "BANK_COORDINATION"
-  | "QUERY_RESOLUTION"
   | "SANCTION_DECISION"
   | "POST_SANCTION_DISBURSEMENT";
+
+export type ProjectStageType = ProjectStage;
 
 export type ProjectStatus =
   | "IN_PROGRESS"
@@ -36,7 +48,44 @@ export type ProjectStatus =
   | "BANK_SUBMISSION"
   | "SANCTIONED"
   | "REVISION_REQUIRED"
-  | "ON_HOLD";
+  | "ON_HOLD"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "COMPLETED" | "BLOCKED";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+
+export type FinancialInstitutionType =
+  | "PUBLIC_SECTOR_BANK"
+  | "PRIVATE_BANK"
+  | "NBFC"
+  | "DEVELOPMENT_FINANCIAL_INSTITUTION"
+  | "COOPERATIVE_BANK"
+  | "FOREIGN_BANK"
+  | "OTHER";
+
+export type ApplicationStatus =
+  | "DRAFT"
+  | "DOCUMENTATION_PENDING"
+  | "SUBMITTED"
+  | "UNDER_APPRAISAL"
+  | "QUERIES_RAISED"
+  | "SANCTIONED"
+  | "REJECTED"
+  | "DISBURSED"
+  | "WITHDRAWN";
+
+export type DocumentCategory =
+  | "KYC_PROMOTER"
+  | "STATUTORY_REGISTRATIONS"
+  | "PAST_FINANCIALS_AUDITED"
+  | "BANK_STATEMENTS"
+  | "PROJECT_COST_ESTIMATES_QUOTATIONS"
+  | "COLLATERAL_LEGAL_DOCS"
+  | "CMA_REPORT"
+  | "DPR_REPORT"
+  | "SANCTION_LETTER"
+  | "OTHER";
 
 export type DocumentStatus =
   | "PENDING_UPLOAD"
@@ -45,7 +94,10 @@ export type DocumentStatus =
   | "VERIFIED"
   | "REJECTED";
 
-export type InvoiceStatus = "DRAFT" | "ISSUED" | "PAID" | "CANCELLED";
+export type InvoiceStatus = "DRAFT" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "CANCELLED";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
 
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL_SENT" | "CONVERTED" | "CLOSED";
+export type ArticleStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
