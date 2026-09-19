@@ -1,0 +1,44 @@
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "LEAD_ADVISOR"
+  | "ANALYST"
+  | "CLIENT"
+  | "PARTNER_CA";
+
+export type ProjectStage =
+  | "IDEA_FEASIBILITY"
+  | "BUSINESS_SETUP"
+  | "COMPLIANCE_REGISTRATIONS"
+  | "PROJECT_PLANNING"
+  | "DPR_PREPARATION"
+  | "CMA_DATA_PREPARATION"
+  | "FINANCIAL_MODELLING"
+  | "FINANCE_READINESS_REVIEW"
+  | "LOAN_PRODUCT_DISCOVERY"
+  | "APPLICATION_PREPARATION"
+  | "BANK_COORDINATION"
+  | "QUERY_RESOLUTION"
+  | "SANCTION_DECISION"
+  | "POST_SANCTION_DISBURSEMENT";
+
+export type ProjectStatus =
+  | "IN_PROGRESS"
+  | "PENDING_CLIENT_ACTION"
+  | "PENDING_ADVISOR_ACTION"
+  | "BANK_SUBMISSION"
+  | "SANCTIONED"
+  | "REVISION_REQUIRED"
+  | "ON_HOLD";
+
+export type DocumentStatus =
+  | "PENDING_UPLOAD"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "VERIFIED"
+  | "REJECTED";
+
+export type InvoiceStatus = "DRAFT" | "ISSUED" | "PAID" | "CANCELLED";
+
+export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";

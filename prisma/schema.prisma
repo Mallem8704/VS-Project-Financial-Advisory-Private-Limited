@@ -1,0 +1,438 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  LEAD_ADVISOR
+  ANALYST
+  CLIENT
+  PARTNER_CA
+}
+
+enum BusinessConstitution {
+  PROPRIETORSHIP
+  PARTNERSHIP
+  LLP
+  PRIVATE_LIMITED
+  PUBLIC_LIMITED
+  OTHER
+}
+
+enum ProjectStage {
+  IDEA_FEASIBILITY
+  BUSINESS_SETUP
+  COMPLIANCE_REGISTRATIONS
+  PROJECT_PLANNING
+  DPR_PREPARATION
+  CMA_DATA_PREPARATION
+  FINANCIAL_MODELLING
+  FINANCE_READINESS_REVIEW
+  LOAN_PRODUCT_DISCOVERY
+  APPLICATION_PREPARATION
+  BANK_COORDINATION
+  QUERY_RESOLUTION
+  SANCTION_DECISION
+  POST_SANCTION_DISBURSEMENT
+}
+
+enum ProjectStatus {
+  IN_PROGRESS
+  PENDING_CLIENT_ACTION
+  PENDING_ADVISOR_ACTION
+  BANK_SUBMISSION
+  SANCTIONED
+  REVISION_REQUIRED
+  ON_HOLD
+}
+
+enum DocumentCategory {
+  KYC_PROMOTER
+  STATUTORY_REGISTRATIONS
+  PAST_FINANCIALS_AUDITED
+  BANK_STATEMENTS
+  PROJECT_COST_ESTIMATES_QUOTATIONS
+  COLLATERAL_LEGAL_DOCS
+  CMA_REPORT
+  DPR_REPORT
+  SANCTION_LETTER
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING_UPLOAD
+  SUBMITTED
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  CANCELLED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  CONVERTED
+  CLOSED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  role          UserRole  @default(CLIENT)
+  phone         String?
+  isMfaEnabled  Boolean   @default(false)
+  mfaSecret     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  companyProfile CompanyProfile?
+  assignedProjects Project[] @relation("AdvisorAssignedProjects")
+  createdProjects Project[] @relation("ClientCreatedProjects")
+  supportTickets SupportTicket[]
+  messagesSent Message[] @relation("SentMessages")
+  messagesReceived Message[] @relation("ReceivedMessages")
+  meetings Meeting[]
+  auditLogs AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model CompanyProfile {
+  id                    String               @id @default(cuid())
+  userId                String               @unique
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName           String
+  constitution          BusinessConstitution @default(PRIVATE_LIMITED)
+  udyamNumber           String?
+  gstNumber             String?
+  panNumber             String?
+  cinNumber             String?
+  industrySector        String
+  businessVintageYears  Int                  @default(0)
+  annualTurnoverInLakhs Float                @default(0)
+  existingDebtInLakhs   Float                @default(0)
+  address               String?
+  state                 String?
+  pinCode               String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id                   String        @id @default(cuid())
+  companyId            String
+  company              CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientId             String
+  client               User          @relation("ClientCreatedProjects", fields: [clientId], references: [id])
+  leadAdvisorId        String?
+  leadAdvisor          User?         @relation("AdvisorAssignedProjects", fields: [leadAdvisorId], references: [id])
+  title                String
+  projectSector        String
+  totalProjectCostInLakhs Float
+  requestedLoanAmountInLakhs Float
+  promoterContributionInLakhs Float
+  targetLenders        String?       // JSON or comma separated target banks/NBFCs
+  currentStage         ProjectStage  @default(IDEA_FEASIBILITY)
+  status               ProjectStatus @default(IN_PROGRESS)
+  targetCompletionDate DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  milestones    ProjectMilestone[]
+  activities    ProjectActivity[]
+  documents     Document[]
+  invoices      Invoice[]
+  messages      Message[]
+  supportTickets SupportTicket[]
+  meetings      Meeting[]
+  cmaWorkspaces CmaWorkspace[]
+  dprWorkspaces DprWorkspace[]
+
+  @@index([clientId])
+  @@index([leadAdvisorId])
+  @@index([currentStage])
+}
+
+model ProjectMilestone {
+  id           String       @id @default(cuid())
+  projectId    String
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage        ProjectStage
+  title        String
+  description  String?
+  isCompleted  Boolean      @default(false)
+  completedAt  DateTime?
+  orderIndex   Int          @default(0)
+  pendingActor String       @default("VS Advisory") // "Client" | "VS Advisory" | "Bank"
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+model ProjectActivity {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId     String
+  actorName   String
+  actorRole   String
+  action      String
+  details     String?
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model Document {
+  id               String           @id @default(cuid())
+  projectId        String
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category         DocumentCategory
+  title            String
+  fileName         String
+  fileKey          String           // S3 object key (no public URL)
+  fileSize         Int              @default(0)
+  mimeType         String           @default("application/pdf")
+  status           DocumentStatus   @default(PENDING_UPLOAD)
+  rejectionRemarks String?
+  uploadedByUserId String?
+  verifiedByUserId String?
+  verifiedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model ReadinessAssessment {
+  id                     String   @id @default(cuid())
+  companyName            String
+  contactEmail           String
+  contactPhone           String?
+  businessVintageYears   Int
+  annualTurnoverInLakhs  Float
+  netProfitMarginPercent Float
+  cibilScoreBracket      String
+  existingDebtInLakhs    Float
+  collateralValueInLakhs Float
+  gstComplianceTrack     String
+  indicativeScore        Int
+  riskCategory           String
+  recommendedFacilities  String   // JSON string of potentially suitable products
+  actionableInsights     String   // JSON string of improvement areas
+  createdAt              DateTime @default(now())
+
+  @@index([contactEmail])
+}
+
+model CmaWorkspace {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title          String
+  operatingData  String   // JSON containing Form I to Form VI
+  mpbfMethod1    Float?
+  mpbfMethod2    Float?
+  projectedDscr  Float?
+  projectedCurrentRatio Float?
+  status         String   @default("DRAFT")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model DprWorkspace {
+  id                   String   @id @default(cuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title                String
+  executiveSummary     String?
+  promoterBackground   String?
+  technicalFeasibility String?
+  marketPotential      String?
+  financialPlan        String?  // JSON
+  swotAnalysis         String?  // JSON
+  status               String   @default("DRAFT")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoiceNumber     String        @unique
+  milestoneTitle    String
+  amount            Float
+  gstAmount         Float
+  totalAmount       Float
+  status            InvoiceStatus @default(ISSUED)
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  dueDate           DateTime
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([projectId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId    String?
+  recipient      User?    @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  content        String
+  attachmentKey  String?
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([projectId])
+  @@index([senderId])
+}
+
+model SupportTicket {
+  id             String         @id @default(cuid())
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  ticketNumber   String         @unique
+  subject        String
+  description    String
+  priority       TicketPriority @default(MEDIUM)
+  status         TicketStatus   @default(OPEN)
+  assignedToName String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model Meeting {
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  advisorName     String
+  title           String
+  scheduledAt     DateTime
+  durationMinutes Int      @default(45)
+  meetingUrl      String?
+  status          String   @default("SCHEDULED")
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model KnowledgeArticle {
+  id                 String        @id @default(cuid())
+  slug               String        @unique
+  title              String
+  category           String        // RBI Circular, Subsidy Scheme, Banking Norm, Tax & Compliance
+  summary            String
+  content            String
+  sourceUrl          String
+  issuingAuthority   String        // RBI, Ministry of MSME, SIDBI, GST Council
+  publicationDate    DateTime
+  effectiveDate      DateTime
+  lastReviewedDate   DateTime
+  reviewedBy         String
+  applicableAudience String        // MSMEs, Manufacturing Units, Exporters, Startups
+  status             ArticleStatus @default(PUBLISHED)
+  tags               String?       // comma separated
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([slug])
+  @@index([category])
+}
+
+model Lead {
+  id                     String     @id @default(cuid())
+  fullName               String
+  email                  String
+  phone                  String
+  businessName           String
+  industry               String
+  estimatedLoanAmount    Float?     // in Lakhs
+  loanType               String?
+  source                 String     @default("WEBSITE_INTAKE")
+  status                 LeadStatus @default(NEW)
+  assignedAdvisorName    String?
+  notes                  String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  @@index([status])
+  @@index([email])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String
+  actorEmail   String
+  actorRole    String
+  actor        User?    @relation(fields: [actorId], references: [id])
+  action       String   // e.g. DOCUMENT_VERIFIED, CMA_UPDATED, INVOICE_PAID, LOGIN_SUCCESS
+  resource     String   // e.g. Document, CmaWorkspace, Invoice
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([resource])
+}
