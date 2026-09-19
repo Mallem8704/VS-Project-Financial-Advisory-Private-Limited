@@ -1498,7 +1498,7 @@ export default function ToolsPage() {
         {/* =========================================================================
             GLOBAL RESULTS SUMMARY & ADVISORY CTA
         ========================================================================= */}
-        <section className="rounded-3xl border border-gold/30 bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 p-8 sm:p-12 text-white shadow-institutional">
+        <section className="rounded-3xl border border-gold/30 bg-[#02111E] bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 p-8 sm:p-12 text-white shadow-institutional">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-8 space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">

@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { extractSessionToken, verifySession } from '@/lib/auth/session';
 import { STAFF_ROLES } from '@/features/auth';
 
@@ -24,14 +24,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/portal/dashboard', req.url));
   }
 
-  // 2. Client Portal Protection (/portal/*)
-  if (pathname.startsWith('/portal')) {
+  // 2. Client Portal & Onboarding Protection
+  if (pathname.startsWith('/portal') || pathname === '/onboarding') {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    // Allow CLIENT and all STAFF roles to access portal (advisors inspect client view)
   }
 
   // 3. Admin Control Center Protection (/admin/*)
@@ -90,6 +89,7 @@ export const config = {
     '/portal/:path*',
     '/admin/:path*',
     '/staff/:path*',
+    '/onboarding',
     '/login',
     '/register',
   ],

@@ -13,6 +13,7 @@ export default function LeadershipPage() {
       <section className="bg-navy-dark text-white pt-12 pb-16 border-b border-navy-800">
         <Container>
           <PageHeader
+            theme="dark"
             eyebrow="Advisory Desk & Governance"
             title="Leadership & Governance"
             description="Our leadership team unites project finance specialists, credit analysts, and compliance advisors. Structured with CMS-ready fields for transparent verification."

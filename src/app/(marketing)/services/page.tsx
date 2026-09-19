@@ -32,7 +32,7 @@ export default function ServicesOverviewPage() {
   return (
     <div className="bg-warm min-h-screen">
       {/* Page Hero Header */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 pt-14 pb-20 text-white sm:pt-20 sm:pb-28">
+      <section className="relative overflow-hidden bg-[#02111E] bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 pt-14 pb-20 text-white sm:pt-20 sm:pb-28">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
         <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-gold/10 blur-3xl pointer-events-none" />
 

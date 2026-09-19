@@ -13,6 +13,7 @@ export default function MissionPage() {
       <section className="bg-navy-dark text-white pt-12 pb-16 border-b border-navy-800">
         <Container>
           <PageHeader
+            theme="dark"
             eyebrow="Purpose & Principles"
             title="Mission, Vision & Core Values"
             description="The foundational doctrine guiding our advisory methodology, client interactions, and credit underwriting standards."

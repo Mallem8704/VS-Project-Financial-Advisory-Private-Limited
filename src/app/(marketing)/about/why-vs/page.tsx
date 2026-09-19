@@ -55,6 +55,7 @@ export default function WhyVSPage() {
       <section className="bg-navy-dark text-white pt-12 pb-16 border-b border-navy-800">
         <Container>
           <PageHeader
+            theme="dark"
             eyebrow="The Institutional Advantage"
             title="Why VS Project & Financial Advisory"
             description="How our integrated Finance + Compliance + Technology triad model delivers bank-ready outcomes where fragmented consultancy fails."
@@ -183,7 +184,7 @@ export default function WhyVSPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="rounded-3xl border border-gold/30 bg-gradient-to-br from-navy-900 via-navy-dark to-navy-950 p-8 sm:p-12 text-white shadow-institutional-lg text-center space-y-5">
+        <section className="rounded-3xl border border-gold/30 bg-[#02111E] bg-gradient-to-br from-navy-900 via-navy-dark to-navy-950 p-8 sm:p-12 text-white shadow-institutional-lg text-center space-y-5">
           <h3 className="text-2xl sm:text-3xl font-extrabold font-sans text-white uppercase">
             Experience the VS Institutional Advantage
           </h3>

@@ -9,6 +9,7 @@ export interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   eyebrow?: string;
   badge?: React.ReactNode;
   actions?: React.ReactNode;
+  theme?: "light" | "dark";
 }
 
 export function PageHeader({
@@ -19,33 +20,52 @@ export function PageHeader({
   badge,
   actions,
   className,
+  theme = "light",
   ...props
 }: PageHeaderProps) {
+  const isDark = theme === "dark";
+
   return (
     <div
       className={cn(
-        "pb-6 mb-6 border-b border-border-subtle space-y-4",
+        "pb-6 mb-6 border-b space-y-4",
+        isDark ? "border-navy-700/80 text-white" : "border-border-subtle text-navy-dark",
         className
       )}
       {...props}
     >
-      {breadcrumbs && <Breadcrumb items={breadcrumbs} />}
+      {breadcrumbs && <Breadcrumb items={breadcrumbs} theme={theme} />}
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {eyebrow && (
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gold-dark">
+            <span
+              className={cn(
+                "text-[11px] font-bold uppercase tracking-wider",
+                isDark ? "text-gold" : "text-gold-dark"
+              )}
+            >
               {eyebrow}
             </span>
           )}
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-navy-dark font-sans">
+            <h1
+              className={cn(
+                "text-2xl sm:text-4xl font-bold tracking-tight font-serif",
+                isDark ? "text-white" : "text-navy-dark"
+              )}
+            >
               {title}
             </h1>
             {badge && <div>{badge}</div>}
           </div>
           {description && (
-            <p className="text-xs sm:text-sm text-text-secondary leading-relaxed max-w-3xl">
+            <p
+              className={cn(
+                "text-xs sm:text-sm leading-relaxed max-w-3xl",
+                isDark ? "text-navy-100" : "text-text-secondary"
+              )}
+            >
               {description}
             </p>
           )}

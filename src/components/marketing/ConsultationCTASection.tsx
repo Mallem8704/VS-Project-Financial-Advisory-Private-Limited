@@ -7,7 +7,7 @@ export function ConsultationCTASection() {
   return (
     <section className="relative py-20 bg-background overflow-hidden">
       <Container>
-        <div className="relative rounded-3xl border border-gold/30 bg-gradient-to-br from-navy-900 via-navy-dark to-navy-950 p-8 sm:p-12 lg:p-16 text-white shadow-institutional-lg overflow-hidden">
+        <div className="relative rounded-3xl border border-gold/30 bg-[#02111E] bg-gradient-to-br from-navy-900 via-navy-dark to-navy-950 p-8 sm:p-12 lg:p-16 text-white shadow-institutional-lg overflow-hidden">
           {/* Ambient Glows */}
           <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-gold/15 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-navy-500/20 blur-3xl pointer-events-none" />

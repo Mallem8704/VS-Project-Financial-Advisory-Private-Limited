@@ -39,7 +39,7 @@ export default function RegisterPage() {
         return;
       }
 
-      window.location.href = "/portal/dashboard";
+      window.location.href = "/onboarding";
     } catch (err) {
       setErrorMessage((err as Error).message || "Network error during registration.");
       setIsLoading(false);

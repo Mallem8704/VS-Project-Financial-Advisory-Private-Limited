@@ -442,7 +442,7 @@ export default function FinanceReadinessPage() {
             </div>
 
             {/* Score Overview Card */}
-            <div className="rounded-3xl border border-navy-100 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-850 p-8 sm:p-12 text-white shadow-institutional">
+            <div className="rounded-3xl border border-navy-100 bg-[#02111E] bg-gradient-to-br from-navy-950 via-navy-900 to-navy-850 p-8 sm:p-12 text-white shadow-institutional">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 {/* Score Gauge Ring */}
                 <div className="lg:col-span-4 flex flex-col items-center justify-center text-center space-y-3">
@@ -747,7 +747,7 @@ export default function FinanceReadinessPage() {
             </div>
 
             {/* Optional Lead Capture / Save Results Form */}
-            <div className="rounded-3xl border border-gold/40 bg-gradient-to-r from-navy-950 via-navy-900 to-navy-850 p-8 sm:p-12 text-white shadow-institutional print:hidden">
+            <div className="rounded-3xl border border-gold/40 bg-[#02111E] bg-gradient-to-r from-navy-950 via-navy-900 to-navy-850 p-8 sm:p-12 text-white shadow-institutional print:hidden">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div className="lg:col-span-6 space-y-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-gold">

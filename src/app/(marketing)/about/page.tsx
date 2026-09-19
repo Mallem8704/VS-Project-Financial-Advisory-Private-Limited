@@ -46,6 +46,7 @@ export default function AboutPage() {
       <section className="bg-navy-dark text-white pt-12 pb-16 border-b border-navy-800">
         <Container>
           <PageHeader
+            theme="dark"
             eyebrow="Institutional Advisory Profile"
             title="About VS Project & Financial Advisory"
             description="An institutional-grade MSME Project Finance & Business Advisory Platform. We guide Indian entrepreneurs from business idea validation to formal bank sanction and sustainable post-sanction growth."
@@ -445,7 +446,7 @@ export default function AboutPage() {
         </section>
 
         {/* 12. CALL TO ACTION (CTA) */}
-        <section className="rounded-3xl border border-gold/30 bg-gradient-to-br from-navy-900 via-navy-dark to-navy-950 p-8 sm:p-12 text-white shadow-institutional-lg text-center space-y-6">
+        <section className="rounded-3xl border border-gold/30 bg-[#02111E] bg-gradient-to-br from-navy-900 via-navy-dark to-navy-950 p-8 sm:p-12 text-white shadow-institutional-lg text-center space-y-6">
           <div className="max-w-2xl mx-auto space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-gold-light">
               Begin Your Financial Journey

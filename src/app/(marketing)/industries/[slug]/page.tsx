@@ -201,7 +201,7 @@ export default async function DynamicIndustryPage({ params }: IndustryPageProps)
       {/* =========================================================================
           SECTION 1: INDUSTRY HERO
       ========================================================================= */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 pt-12 pb-16 text-white sm:pt-16 sm:pb-24">
+      <section className="relative overflow-hidden bg-[#02111E] bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 pt-12 pb-16 text-white sm:pt-16 sm:pb-24">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
         <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-gold/10 blur-3xl pointer-events-none" />
 
@@ -878,7 +878,7 @@ export default async function DynamicIndustryPage({ params }: IndustryPageProps)
         {/* =========================================================================
             SECTION 17: CONSULTATION CTA + AUDIT TRAIL + REGULATORY DISCLAIMER
         ========================================================================= */}
-        <section className="rounded-3xl border border-gold/30 bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 p-8 sm:p-14 text-white shadow-institutional">
+        <section className="rounded-3xl border border-gold/30 bg-[#02111E] bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 p-8 sm:p-14 text-white shadow-institutional">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-8 space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">

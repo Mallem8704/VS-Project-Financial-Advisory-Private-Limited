@@ -143,7 +143,7 @@ export function Hero() {
 
           {/* Right Column: Custom Journey Visualization (SVG/CSS) */}
           <div className="lg:col-span-6 w-full">
-            <div className="relative mx-auto max-w-lg lg:max-w-none rounded-2xl border border-gold/30 bg-gradient-to-br from-navy-900/90 via-navy-dark to-navy-950 p-5 sm:p-7 shadow-institutional-lg overflow-hidden">
+            <div className="relative mx-auto max-w-lg lg:max-w-none rounded-2xl border border-gold/30 bg-[#02111E] bg-gradient-to-br from-navy-900/90 via-navy-dark to-navy-950 p-5 sm:p-7 shadow-institutional-lg overflow-hidden">
               {/* Top Visual Header / HUD */}
               <div className="flex items-center justify-between pb-4 border-b border-navy-700/80 mb-6">
                 <div>

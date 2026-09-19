@@ -13,6 +13,7 @@ export default function CompanyProfilePage() {
       <section className="bg-navy-dark text-white pt-12 pb-16 border-b border-navy-800">
         <Container>
           <PageHeader
+            theme="dark"
             eyebrow="Corporate Identity & Heritage"
             title="Company Profile & Purpose"
             description="The origins, corporate structure, and fundamental mandate of VS Project & Financial Advisory Private Limited."
