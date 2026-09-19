@@ -129,6 +129,7 @@ model User {
   messagesReceived Message[] @relation("ReceivedMessages")
   meetings Meeting[]
   auditLogs AuditLog[]
+  assessments Assessment[]
 
   @@index([email])
   @@index([role])
@@ -435,4 +436,156 @@ model AuditLog {
   @@index([actorId])
   @@index([action])
   @@index([resource])
+}
+
+enum ReadinessBand {
+  EARLY_PREPARATION
+  DEVELOPING_READINESS
+  MODERATE_READINESS
+  STRONG_READINESS
+  ADVANCED_READINESS
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  NUMBER
+  CURRENCY
+  PERCENTAGE
+  YES_NO
+  DATE
+  TEXT
+}
+
+enum AssessmentStatus {
+  DRAFT
+  COMPLETED
+  ARCHIVED
+}
+
+model AssessmentCategory {
+  id          String               @id @default(cuid())
+  slug        String               @unique // e.g. business-profile, financial-strength
+  name        String               // e.g. Business Profile
+  weight      Float                // Configurable weight (e.g. 0.10 for 10%)
+  orderIndex  Int                  @default(0)
+  description String?
+  questions   AssessmentQuestion[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([slug])
+  @@index([orderIndex])
+}
+
+model AssessmentQuestion {
+  id           String             @id @default(cuid())
+  categoryId   String
+  category     AssessmentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  questionKey  String             @unique // unique identifier code
+  questionText String
+  helpText     String?
+  type         QuestionType       @default(SINGLE_CHOICE)
+  orderIndex   Int                @default(0)
+  isRequired   Boolean            @default(true)
+  weight       Float              @default(1.0) // within-category relative weight
+  options      AssessmentOption[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([categoryId])
+  @@index([questionKey])
+  @@index([orderIndex])
+}
+
+model AssessmentOption {
+  id                String             @id @default(cuid())
+  questionId        String
+  question          AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label             String
+  value             String
+  score             Float              @default(0) // Normalized points (0-100)
+  orderIndex        Int                @default(0)
+  flagMissing       Boolean            @default(false) // True if choosing this indicates missing critical requirement
+  missingItemLabel  String?
+  strengthTag       String?
+  weaknessTag       String?
+  recommendationTag String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([questionId])
+}
+
+model Assessment {
+  id           String               @id @default(cuid())
+  userId       String?              // Optional: guest assessments have null userId
+  user         User?                @relation(fields: [userId], references: [id])
+  guestEmail   String?
+  guestName    String?
+  guestPhone   String?
+  guestCompany String?
+  status       AssessmentStatus     @default(DRAFT)
+  responses    AssessmentResponse[]
+  result       AssessmentResult?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([guestEmail])
+  @@index([status])
+}
+
+model AssessmentResponse {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionKey  String
+  valueString  String?
+  valueNumber  Float?
+  valueBoolean Boolean?
+  valueJson    String?    // For multiple choice arrays
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([assessmentId, questionKey])
+  @@index([assessmentId])
+}
+
+model AssessmentResult {
+  id                   String        @id @default(cuid())
+  assessmentId         String        @unique
+  assessment           Assessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  overallScore         Float         // 0 to 100
+  band                 ReadinessBand
+  bandLabel            String        // Neutral: Early Preparation, Developing, Moderate, Strong, Advanced
+  categoryScoresJson   String        // Array of { categorySlug, name, score, weight, weightedContribution }
+  strengthsJson        String        // Array of strengths
+  weaknessesJson       String        // Array of weaknesses
+  missingItemsJson     String        // Array of missing critical items
+  recommendationsJson  String        // Array of recommended actions
+  suggestedServicesJson String       // Array of { title, slug, description }
+  checklistJson        String        // Array of { category, items }
+  disclaimer           String
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([overallScore])
+  @@index([band])
+}
+
+model AssessmentRecommendation {
+  id                  String   @id @default(cuid())
+  categorySlug        String
+  conditionKey        String   // e.g. low_profit_margin, missing_gst, low_vintage
+  title               String
+  description         String
+  actionType          String   // IMMEDIATE, MEDIUM_TERM, ADVISORY
+  suggestedServiceSlug String?
+  priority            Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([categorySlug])
+  @@index([conditionKey])
 }
